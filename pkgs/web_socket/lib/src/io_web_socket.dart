@@ -26,7 +26,7 @@ class IOWebSocket implements WebSocket {
   static Future<IOWebSocket> connect(
     Uri url, {
     Iterable<String>? protocols,
-    io.HttpClient? customHttpClient,
+    io.HttpClient? customClient,
   }) async {
     if (!url.isScheme('ws') && !url.isScheme('wss')) {
       throw ArgumentError.value(url, 'url', 'only ws: and wss: schemes are supported');
@@ -37,7 +37,7 @@ class IOWebSocket implements WebSocket {
       webSocket = await io.WebSocket.connect(
         url.toString(),
         protocols: protocols,
-        customClient: customHttpClient,
+        customClient: customClient,
       );
     } on io.WebSocketException catch (e) {
       throw WebSocketException(e.message);

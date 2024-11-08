@@ -123,12 +123,12 @@ abstract interface class WebSocket {
   static Future<WebSocket> connect(
     Uri url, {
     Iterable<String>? protocols,
-    Object? customHttpClient,
+    Object? customClient,
   }) =>
       connector.connect(
         url,
         protocols: protocols,
-        customHttpClient: customHttpClient,
+        customClient: customClient,
       );
 
   /// Sends text data to the connected peer.
