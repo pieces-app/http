@@ -123,7 +123,7 @@ abstract interface class WebSocket {
   static Future<WebSocket> connect(
     Uri url, {
     Iterable<String>? protocols,
-    Object? customClient,
+    dynamic customClient,
   }) =>
       connector.connect(
         url,
