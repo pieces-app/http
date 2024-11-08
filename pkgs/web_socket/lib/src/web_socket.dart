@@ -117,6 +117,11 @@ abstract interface class WebSocket {
   ///
   /// The URL supplied in [url] must use the scheme ws or wss.
   ///
+  /// [customClient] if provided is passed to the `io.WebSocket` at time of websocket
+  /// creation. For `web` platform, passing this value has no effect.
+  /// Can either be an `io.HttpClient` or `web.Client`. Any other value will throw a
+  /// type error at runtime.
+  ///
   /// If provided, the [protocols] argument indicates that subprotocols that
   /// the peer is able to select. See
   /// [RFC-6455 1.9](https://datatracker.ietf.org/doc/html/rfc6455#section-1.9).

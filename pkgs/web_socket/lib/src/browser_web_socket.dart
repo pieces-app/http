@@ -22,6 +22,9 @@ class BrowserWebSocket implements WebSocket {
   ///
   /// The URL supplied in [url] must use the scheme ws or wss.
   ///
+  /// Passing [customClient] doesn't have any effect on web platforms websocket creation.
+  /// It's only provided to be able to match the `connect` api stub signature.
+  ///
   /// If provided, the [protocols] argument indicates that subprotocols that
   /// the peer is able to select. See
   /// [RFC-6455 1.9](https://datatracker.ietf.org/doc/html/rfc6455#section-1.9).
