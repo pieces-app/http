@@ -25,15 +25,16 @@ class BrowserWebSocket implements WebSocket {
   /// If provided, the [protocols] argument indicates that subprotocols that
   /// the peer is able to select. See
   /// [RFC-6455 1.9](https://datatracker.ietf.org/doc/html/rfc6455#section-1.9).
-  static Future<BrowserWebSocket> connect(Uri url,
-      {Iterable<String>? protocols}) async {
+  static Future<BrowserWebSocket> connect(
+    Uri url, {
+    Iterable<String>? protocols,
+    web.Client? customHttpClient,
+  }) async {
     if (!url.isScheme('ws') && !url.isScheme('wss')) {
-      throw ArgumentError.value(
-          url, 'url', 'only ws: and wss: schemes are supported');
+      throw ArgumentError.value(url, 'url', 'only ws: and wss: schemes are supported');
     }
 
-    final webSocket = web.WebSocket(url.toString(),
-        protocols?.map((e) => e.toJS).toList().toJS ?? JSArray())
+    final webSocket = web.WebSocket(url.toString(), protocols?.map((e) => e.toJS).toList().toJS ?? JSArray())
       ..binaryType = 'arraybuffer';
     final browserSocket = BrowserWebSocket._(webSocket);
     final webSocketConnected = Completer<BrowserWebSocket>();
@@ -41,10 +42,8 @@ class BrowserWebSocket implements WebSocket {
     if (webSocket.readyState == web.WebSocket.OPEN) {
       webSocketConnected.complete(browserSocket);
     } else {
-      if (webSocket.readyState == web.WebSocket.CLOSING ||
-          webSocket.readyState == web.WebSocket.CLOSED) {
-        webSocketConnected.completeError(WebSocketException(
-            'Unexpected WebSocket state: ${webSocket.readyState}, '
+      if (webSocket.readyState == web.WebSocket.CLOSING || webSocket.readyState == web.WebSocket.CLOSED) {
+        webSocketConnected.completeError(WebSocketException('Unexpected WebSocket state: ${webSocket.readyState}, '
             'expected CONNECTING (0) or OPEN (1)'));
       } else {
         // The socket API guarantees that only a single open event will be
@@ -73,10 +72,8 @@ class BrowserWebSocket implements WebSocket {
       late WebSocketEvent data;
       if (eventData.typeofEquals('string')) {
         data = TextDataReceived((eventData as JSString).toDart);
-      } else if (eventData.typeofEquals('object') &&
-          (eventData as JSObject).instanceOfString('ArrayBuffer')) {
-        data = BinaryDataReceived(
-            (eventData as JSArrayBuffer).toDart.asUint8List());
+      } else if (eventData.typeofEquals('object') && (eventData as JSObject).instanceOfString('ArrayBuffer')) {
+        data = BinaryDataReceived((eventData as JSArrayBuffer).toDart.asUint8List());
       } else {
         throw StateError('unexpected message type: ${eventData.runtimeType}');
       }

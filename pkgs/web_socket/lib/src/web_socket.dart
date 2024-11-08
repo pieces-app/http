@@ -19,8 +19,7 @@ final class TextDataReceived extends WebSocketEvent {
   TextDataReceived(this.text);
 
   @override
-  bool operator ==(Object other) =>
-      other is TextDataReceived && other.text == text;
+  bool operator ==(Object other) => other is TextDataReceived && other.text == text;
 
   @override
   int get hashCode => text.hashCode;
@@ -70,8 +69,7 @@ final class CloseReceived extends WebSocketEvent {
   CloseReceived([this.code, this.reason = '']);
 
   @override
-  bool operator ==(Object other) =>
-      other is CloseReceived && other.code == code && other.reason == reason;
+  bool operator ==(Object other) => other is CloseReceived && other.code == code && other.reason == reason;
 
   @override
   int get hashCode => [code, reason].hashCode;
@@ -122,8 +120,16 @@ abstract interface class WebSocket {
   /// If provided, the [protocols] argument indicates that subprotocols that
   /// the peer is able to select. See
   /// [RFC-6455 1.9](https://datatracker.ietf.org/doc/html/rfc6455#section-1.9).
-  static Future<WebSocket> connect(Uri url, {Iterable<String>? protocols}) =>
-      connector.connect(url, protocols: protocols);
+  static Future<WebSocket> connect(
+    Uri url, {
+    Iterable<String>? protocols,
+    Object? customHttpClient,
+  }) =>
+      connector.connect(
+        url,
+        protocols: protocols,
+        customHttpClient: customHttpClient,
+      );
 
   /// Sends text data to the connected peer.
   ///

@@ -23,35 +23,37 @@ class IOWebSocket implements WebSocket {
   /// If provided, the [protocols] argument indicates that subprotocols that
   /// the peer is able to select. See
   /// [RFC-6455 1.9](https://datatracker.ietf.org/doc/html/rfc6455#section-1.9).
-  static Future<IOWebSocket> connect(Uri url,
-      {Iterable<String>? protocols}) async {
+  static Future<IOWebSocket> connect(
+    Uri url, {
+    Iterable<String>? protocols,
+    io.HttpClient? customHttpClient,
+  }) async {
     if (!url.isScheme('ws') && !url.isScheme('wss')) {
-      throw ArgumentError.value(
-          url, 'url', 'only ws: and wss: schemes are supported');
+      throw ArgumentError.value(url, 'url', 'only ws: and wss: schemes are supported');
     }
 
     final io.WebSocket webSocket;
     try {
-      webSocket =
-          await io.WebSocket.connect(url.toString(), protocols: protocols);
+      webSocket = await io.WebSocket.connect(
+        url.toString(),
+        protocols: protocols,
+        customClient: customHttpClient,
+      );
     } on io.WebSocketException catch (e) {
       throw WebSocketException(e.message);
     }
 
-    if (webSocket.protocol != null &&
-        !(protocols ?? []).contains(webSocket.protocol)) {
+    if (webSocket.protocol != null && !(protocols ?? []).contains(webSocket.protocol)) {
       // dart:io WebSocket does not correctly validate the returned protocol.
       // See https://github.com/dart-lang/sdk/issues/55106
       await webSocket.close(1002); // protocol error
-      throw WebSocketException(
-          'unexpected protocol selected by peer: ${webSocket.protocol}');
+      throw WebSocketException('unexpected protocol selected by peer: ${webSocket.protocol}');
     }
     return IOWebSocket._(webSocket);
   }
 
   // Create an `IOWebSocket` from an existing `dart:io` `WebSocket`.
-  factory IOWebSocket.fromWebSocket(io.WebSocket webSocket) =>
-      IOWebSocket._(webSocket);
+  factory IOWebSocket.fromWebSocket(io.WebSocket webSocket) => IOWebSocket._(webSocket);
 
   IOWebSocket._(this._webSocket) {
     _webSocket.listen(
@@ -67,8 +69,7 @@ class IOWebSocket implements WebSocket {
       onError: (Object e, StackTrace st) {
         if (_events.isClosed) return;
         final wse = switch (e) {
-          io.WebSocketException(message: final message) =>
-            WebSocketException(message),
+          io.WebSocketException(message: final message) => WebSocketException(message),
           _ => WebSocketException(e.toString()),
         };
         _events.addError(wse, st);
@@ -76,8 +77,7 @@ class IOWebSocket implements WebSocket {
       onDone: () {
         if (_events.isClosed) return;
         _events
-          ..add(
-              CloseReceived(_webSocket.closeCode, _webSocket.closeReason ?? ''))
+          ..add(CloseReceived(_webSocket.closeCode, _webSocket.closeReason ?? ''))
           ..close();
       },
     );
