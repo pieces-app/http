@@ -11,8 +11,6 @@ topics:
 environment:
   sdk: ^3.4.0
 
-resolution: workspace
-
 dependencies:
   async: ^2.5.0
   http_parser: ^4.0.0

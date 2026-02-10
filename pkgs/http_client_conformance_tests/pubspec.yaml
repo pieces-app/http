@@ -8,8 +8,6 @@ publish_to: none
 environment:
   sdk: ^3.4.0
 
-resolution: workspace
-
 dependencies:
   async: ^2.8.2
   dart_style: ">=2.3.7 <4.0.0"

@@ -8,8 +8,6 @@ environment:
   sdk: ^3.0.0
   flutter: '>=3.10.0'
 
-resolution: workspace
-
 dependencies:
   cronet_http: ^1.0.0
   cupertino_http: ^2.0.0

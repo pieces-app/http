@@ -6,8 +6,6 @@ publish_to: 'none'
 environment:
   sdk: ^3.4.0
 
-resolution: workspace
-
 dependencies:
   cronet_http:
     path: ../

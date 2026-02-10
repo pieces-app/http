@@ -7,8 +7,6 @@ repository: https://github.com/dart-lang/http/tree/master/pkgs/http_multi_server
 environment:
   sdk: ^3.2.0
 
-resolution: workspace
-
 dependencies:
   async: ^2.5.0
 

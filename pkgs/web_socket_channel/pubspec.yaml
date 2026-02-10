@@ -7,8 +7,6 @@ repository: https://github.com/dart-lang/http/tree/master/pkgs/web_socket_channe
 environment:
   sdk: ^3.3.0
 
-resolution: workspace
-
 dependencies:
   async: ^2.5.0
   crypto: ^3.0.0

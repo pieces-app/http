@@ -9,8 +9,6 @@ environment:
   sdk: ^3.8.0
   flutter: '>=3.32.0' # If changed, update test matrix.
 
-resolution: workspace
-
 dependencies:
   async: ^2.5.0
   ffi: ^2.1.0
