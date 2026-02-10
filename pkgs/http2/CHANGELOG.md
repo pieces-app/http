@@ -1,3 +1,12 @@
+## 3.0.1-wip
+
+- Gracefully handle receiving headers on a stream that the client has canceled. (#1799)
+
+## 3.0.0
+
+- Require Dart SDK `3.7.0`.
+- Add support for providing custom message when terminating a connection.
+
 ## 2.3.1
 
 - Require Dart 3.2

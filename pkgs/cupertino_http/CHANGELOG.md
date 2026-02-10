@@ -1,3 +1,47 @@
+## 3.0.0-wip
+
+* Remove `shouldUseExtendedBackgroundIdleMode` from `URLSessionConfiguration`.
+* Fix a bug where close reasons not containing valid UTF-8 would cause an
+  uncatchable exception to be thrown.
+* Exclude unnecessary generated code. Slightly reduces disk space requirements.
+
+## 2.4.0
+
+* Switch to `package:objective_c` `9.1.0` and `package:ffigen` `20.1.0`.
+* Add URL to thrown `RequestAbortedException`.
+ 
+## 2.3.0
+
+* Add the ability to abort requests.
+* Make `ConnectionException.toString` more helpful.
+
+## 2.2.0
+
+* Cancel requests when the response stream is cancelled.
+* Add a new exception type `NSErrorClientException` that contains the
+  `NSError` associated with the failure.
+
+## 2.1.1
+
+* Support `package:web_socket` 1.0.0.
+
+## 2.1.0
+
+* Remove some unnecessary native code.
+* Upgrade to `package:objective_c` 7.0.
+* Upgrade to `package:ffigen` 18.0.
+* Fix a [bug](https://github.com/dart-lang/http/issues/1702) where
+  `package:cupertino_http` did not work with `package:firebase_performance`
+  enabled.
+
+## 2.0.2
+
+* Upgrade to `package:objective_c` 4.1.
+* Upgrade to `package:ffigen` 16.1.
+* Fixes a bug where responses were not processed correctly:
+  * [#1413](https://github.com/dart-lang/http/issues/1413)
+  * [#1446](https://github.com/dart-lang/http/issues/1446)
+
 ## 2.0.1
 
 * Fix a [bug](https://github.com/dart-lang/http/issues/1398) where
