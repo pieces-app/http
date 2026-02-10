@@ -1,9 +1,9 @@
-# Run with `flutter packages pub run ffigen --config ffigen.yaml`.
+# Run with `dart run ffigen --config ffigen.yaml`.
 name: NativeCupertinoHttp
 description: |
   Bindings for the Foundation URL Loading System and supporting libraries.
 
-  Regenerate bindings with `flutter packages pub run ffigen --config ffigen.yaml`.
+  Regenerate bindings with `dart run ffigen --config ffigen.yaml`.
 language: 'objc'
 output:
   bindings: 'lib/src/native_cupertino_bindings.dart'
@@ -21,7 +21,6 @@ headers:
     - '/System/Volumes/Data/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Versions/C/Headers/NSOperation.h'
     - '/System/Volumes/Data/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Versions/C/Headers/NSError.h'
     - '/System/Volumes/Data/Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk/System/Library/Frameworks/Foundation.framework/Versions/C/Headers/NSDictionary.h'
-    - 'darwin/cupertino_http/Sources/cupertino_http/utils.h'
 preamble: |
   // ignore_for_file: always_specify_types
   // ignore_for_file: camel_case_types
@@ -29,8 +28,10 @@ preamble: |
   // ignore_for_file: unused_element
   // ignore_for_file: unused_field
   // ignore_for_file: return_of_invalid_type
+exclude-all-by-default: true
 objc-interfaces:
   include:
+    - 'NSCondition'
     - 'NSHTTPURLResponse'
     - 'NSMutableURLRequest'
     - 'NSOperationQueue'
@@ -43,6 +44,18 @@ objc-interfaces:
     - 'NSURLSessionTask'
     - 'NSURLSessionWebSocketMessage'
     - 'NSURLSessionWebSocketTask'
+  member-rename:
+    # TODO(brianquinlan): Remove this when
+    # https://github.com/dart-lang/native/issues/2419 is fixed.
+    'NSURLResponse':
+      'initWithURL:MIMEType:expectedContentLength:textEncodingName:': 'initWithUrlAndMIMEType'
+    'NSHTTPURLResponse':
+      'initWithURL:statusCode:HTTPVersion:headerFields:': 'initWithURLAndStatusCode'
+objc-protocols:
+  include:
+    - 'NSURLSessionDataDelegate'
+    - 'NSURLSessionDownloadDelegate'
+    - 'NSURLSessionWebSocketDelegate'
 comments:
   style: any
   length: full

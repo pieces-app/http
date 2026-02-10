@@ -1,4 +1,6 @@
 #include <stdint.h>
+#import <Foundation/Foundation.h>
+#import <objc/message.h>
 #import <Foundation/NSURLCache.h>
 #import <Foundation/NSURLRequest.h>
 #import <Foundation/NSURLSession.h>
@@ -10,275 +12,556 @@
 #import <Foundation/NSOperation.h>
 #import <Foundation/NSError.h>
 #import <Foundation/NSDictionary.h>
-#import "utils.h"
 
 #if !__has_feature(objc_arc)
 #error "This file must be compiled with ARC enabled"
 #endif
 
-id objc_retain(id);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wundeclared-selector"
+
+typedef struct {
+  int64_t version;
+  void* (*newWaiter)(void);
+  void (*awaitWaiter)(void*);
+  void* (*currentIsolate)(void);
+  void (*enterIsolate)(void*);
+  void (*exitIsolate)(void);
+  int64_t (*getMainPortId)(void);
+  bool (*getCurrentThreadOwnsIsolate)(int64_t);
+} DOBJC_Context;
+
 id objc_retainBlock(id);
 
-typedef void  (^_ListenerTrampoline)();
-_ListenerTrampoline _wrapListenerBlock_ksby9f(_ListenerTrampoline block) NS_RETURNS_RETAINED {
+#define BLOCKING_BLOCK_IMPL(ctx, BLOCK_SIG, INVOKE_DIRECT, INVOKE_LISTENER)    \
+  assert(ctx->version >= 1);                                                   \
+  void* targetIsolate = ctx->currentIsolate();                                 \
+  int64_t targetPort = ctx->getMainPortId == NULL ? 0 : ctx->getMainPortId();  \
+  return BLOCK_SIG {                                                           \
+    void* currentIsolate = ctx->currentIsolate();                              \
+    bool mayEnterIsolate =                                                     \
+        currentIsolate == NULL &&                                              \
+        ctx->getCurrentThreadOwnsIsolate != NULL &&                            \
+        ctx->getCurrentThreadOwnsIsolate(targetPort);                          \
+    if (currentIsolate == targetIsolate || mayEnterIsolate) {                  \
+      if (mayEnterIsolate) {                                                   \
+        ctx->enterIsolate(targetIsolate);                                      \
+      }                                                                        \
+      INVOKE_DIRECT;                                                           \
+      if (mayEnterIsolate) {                                                   \
+        ctx->exitIsolate();                                                    \
+      }                                                                        \
+    } else {                                                                   \
+      void* waiter = ctx->newWaiter();                                         \
+      INVOKE_LISTENER;                                                         \
+      ctx->awaitWaiter(waiter);                                                \
+    }                                                                          \
+  };
+
+
+typedef BOOL  (^_ProtocolTrampoline)(void * sel);
+__attribute__((visibility("default"))) __attribute__((used))
+BOOL  _NativeCupertinoHttp_protocolTrampoline_e3qsqz(id target, void * sel) {
+  return ((_ProtocolTrampoline)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel);
+}
+
+typedef void  (^_ListenerTrampoline)(void * arg0, id arg1);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline _NativeCupertinoHttp_wrapListenerBlock_18v1jvf(_ListenerTrampoline block) NS_RETURNS_RETAINED {
+  return ^void(void * arg0, id arg1) {
+    objc_retainBlock(block);
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1));
+  };
+}
+
+typedef void  (^_BlockingTrampoline)(void * waiter, void * arg0, id arg1);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline _NativeCupertinoHttp_wrapBlockingBlock_18v1jvf(
+    _BlockingTrampoline block, _BlockingTrampoline listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0, id arg1), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1));
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_1)(void * sel, id arg1);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_18v1jvf(id target, void * sel, id arg1) {
+  return ((_ProtocolTrampoline_1)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1);
+}
+
+typedef id  (^_ProtocolTrampoline_2)(void * sel, id arg1);
+__attribute__((visibility("default"))) __attribute__((used))
+id  _NativeCupertinoHttp_protocolTrampoline_xr62hr(id target, void * sel, id arg1) {
+  return ((_ProtocolTrampoline_2)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1);
+}
+
+typedef void  (^_ListenerTrampoline_1)(id arg0);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_1 _NativeCupertinoHttp_wrapListenerBlock_xtuoz7(_ListenerTrampoline_1 block) NS_RETURNS_RETAINED {
+  return ^void(id arg0) {
+    objc_retainBlock(block);
+    block((__bridge id)(__bridge_retained void*)(arg0));
+  };
+}
+
+typedef void  (^_BlockingTrampoline_1)(void * waiter, id arg0);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_1 _NativeCupertinoHttp_wrapBlockingBlock_xtuoz7(
+    _BlockingTrampoline_1 block, _BlockingTrampoline_1 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(id arg0), {
+    objc_retainBlock(block);
+    block(nil, (__bridge id)(__bridge_retained void*)(arg0));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, (__bridge id)(__bridge_retained void*)(arg0));
+  });
+}
+
+typedef id  (^_ProtocolTrampoline_3)(void * sel);
+__attribute__((visibility("default"))) __attribute__((used))
+id  _NativeCupertinoHttp_protocolTrampoline_1mbt9g9(id target, void * sel) {
+  return ((_ProtocolTrampoline_3)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel);
+}
+
+typedef void  (^_ListenerTrampoline_2)(void);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_2 _NativeCupertinoHttp_wrapListenerBlock_1pl9qdv(_ListenerTrampoline_2 block) NS_RETURNS_RETAINED {
   return ^void() {
     objc_retainBlock(block);
     block();
   };
 }
 
-typedef void  (^_ListenerTrampoline1)(void * arg0);
-_ListenerTrampoline1 _wrapListenerBlock_hepzs(_ListenerTrampoline1 block) NS_RETURNS_RETAINED {
-  return ^void(void * arg0) {
+typedef void  (^_BlockingTrampoline_2)(void * waiter);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_2 _NativeCupertinoHttp_wrapBlockingBlock_1pl9qdv(
+    _BlockingTrampoline_2 block, _BlockingTrampoline_2 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(), {
     objc_retainBlock(block);
-    block(arg0);
-  };
+    block(nil);
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter);
+  });
 }
 
-typedef void  (^_ListenerTrampoline2)(void * arg0, id arg1);
-_ListenerTrampoline2 _wrapListenerBlock_sjfpmz(_ListenerTrampoline2 block) NS_RETURNS_RETAINED {
-  return ^void(void * arg0, id arg1) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1));
-  };
-}
-
-typedef void  (^_ListenerTrampoline3)(id arg0);
-_ListenerTrampoline3 _wrapListenerBlock_ukcdfq(_ListenerTrampoline3 block) NS_RETURNS_RETAINED {
-  return ^void(id arg0) {
-    objc_retainBlock(block);
-    block(objc_retain(arg0));
-  };
-}
-
-typedef void  (^_ListenerTrampoline4)(struct __CFRunLoopObserver * arg0, CFRunLoopActivity arg1);
-_ListenerTrampoline4 _wrapListenerBlock_ttt6u1(_ListenerTrampoline4 block) NS_RETURNS_RETAINED {
-  return ^void(struct __CFRunLoopObserver * arg0, CFRunLoopActivity arg1) {
-    objc_retainBlock(block);
-    block(arg0, arg1);
-  };
-}
-
-typedef void  (^_ListenerTrampoline5)(struct __CFRunLoopTimer * arg0);
-_ListenerTrampoline5 _wrapListenerBlock_1txhfzs(_ListenerTrampoline5 block) NS_RETURNS_RETAINED {
-  return ^void(struct __CFRunLoopTimer * arg0) {
-    objc_retainBlock(block);
-    block(arg0);
-  };
-}
-
-typedef void  (^_ListenerTrampoline6)(size_t arg0);
-_ListenerTrampoline6 _wrapListenerBlock_1hmngv6(_ListenerTrampoline6 block) NS_RETURNS_RETAINED {
-  return ^void(size_t arg0) {
-    objc_retainBlock(block);
-    block(arg0);
-  };
-}
-
-typedef void  (^_ListenerTrampoline7)(id arg0, int arg1);
-_ListenerTrampoline7 _wrapListenerBlock_108ugvk(_ListenerTrampoline7 block) NS_RETURNS_RETAINED {
-  return ^void(id arg0, int arg1) {
-    objc_retainBlock(block);
-    block(objc_retain(arg0), arg1);
-  };
-}
-
-typedef void  (^_ListenerTrampoline8)(int arg0);
-_ListenerTrampoline8 _wrapListenerBlock_1afulej(_ListenerTrampoline8 block) NS_RETURNS_RETAINED {
-  return ^void(int arg0) {
-    objc_retainBlock(block);
-    block(arg0);
-  };
-}
-
-typedef void  (^_ListenerTrampoline9)(BOOL arg0, id arg1, int arg2);
-_ListenerTrampoline9 _wrapListenerBlock_elldw5(_ListenerTrampoline9 block) NS_RETURNS_RETAINED {
-  return ^void(BOOL arg0, id arg1, int arg2) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), arg2);
-  };
-}
-
-typedef void  (^_ListenerTrampoline10)(struct __SecTrust * arg0, SecTrustResultType arg1);
-_ListenerTrampoline10 _wrapListenerBlock_129ffij(_ListenerTrampoline10 block) NS_RETURNS_RETAINED {
-  return ^void(struct __SecTrust * arg0, SecTrustResultType arg1) {
-    objc_retainBlock(block);
-    block(arg0, arg1);
-  };
-}
-
-typedef void  (^_ListenerTrampoline11)(struct __SecTrust * arg0, BOOL arg1, struct __CFError * arg2);
-_ListenerTrampoline11 _wrapListenerBlock_1458n52(_ListenerTrampoline11 block) NS_RETURNS_RETAINED {
-  return ^void(struct __SecTrust * arg0, BOOL arg1, struct __CFError * arg2) {
-    objc_retainBlock(block);
-    block(arg0, arg1, arg2);
-  };
-}
-
-typedef void  (^_ListenerTrampoline12)(uint16_t arg0);
-_ListenerTrampoline12 _wrapListenerBlock_yo3tv0(_ListenerTrampoline12 block) NS_RETURNS_RETAINED {
-  return ^void(uint16_t arg0) {
-    objc_retainBlock(block);
-    block(arg0);
-  };
-}
-
-typedef void  (^_ListenerTrampoline13)(id arg0, id arg1);
-_ListenerTrampoline13 _wrapListenerBlock_1tjlcwl(_ListenerTrampoline13 block) NS_RETURNS_RETAINED {
-  return ^void(id arg0, id arg1) {
-    objc_retainBlock(block);
-    block(objc_retain(arg0), objc_retain(arg1));
-  };
-}
-
-typedef void  (^_ListenerTrampoline14)(id arg0, id arg1, id arg2);
-_ListenerTrampoline14 _wrapListenerBlock_10t0qpd(_ListenerTrampoline14 block) NS_RETURNS_RETAINED {
+typedef void  (^_ListenerTrampoline_3)(id arg0, id arg1, id arg2);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_3 _NativeCupertinoHttp_wrapListenerBlock_r8gdi7(_ListenerTrampoline_3 block) NS_RETURNS_RETAINED {
   return ^void(id arg0, id arg1, id arg2) {
     objc_retainBlock(block);
-    block(objc_retain(arg0), objc_retain(arg1), objc_retainBlock(arg2));
+    block((__bridge id)(__bridge_retained void*)(arg0), (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2));
   };
 }
 
-typedef void  (^_ListenerTrampoline15)(id arg0, id arg1);
-_ListenerTrampoline15 _wrapListenerBlock_cmbt6k(_ListenerTrampoline15 block) NS_RETURNS_RETAINED {
+typedef void  (^_BlockingTrampoline_3)(void * waiter, id arg0, id arg1, id arg2);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_3 _NativeCupertinoHttp_wrapBlockingBlock_r8gdi7(
+    _BlockingTrampoline_3 block, _BlockingTrampoline_3 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(id arg0, id arg1, id arg2), {
+    objc_retainBlock(block);
+    block(nil, (__bridge id)(__bridge_retained void*)(arg0), (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, (__bridge id)(__bridge_retained void*)(arg0), (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2));
+  });
+}
+
+typedef void  (^_ListenerTrampoline_4)(id arg0, id arg1);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_4 _NativeCupertinoHttp_wrapListenerBlock_pfv6jd(_ListenerTrampoline_4 block) NS_RETURNS_RETAINED {
   return ^void(id arg0, id arg1) {
     objc_retainBlock(block);
-    block(objc_retain(arg0), objc_retainBlock(arg1));
+    block((__bridge id)(__bridge_retained void*)(arg0), (__bridge id)(__bridge_retained void*)(arg1));
   };
 }
 
-typedef void  (^_ListenerTrampoline16)(BOOL arg0);
-_ListenerTrampoline16 _wrapListenerBlock_117qins(_ListenerTrampoline16 block) NS_RETURNS_RETAINED {
-  return ^void(BOOL arg0) {
+typedef void  (^_BlockingTrampoline_4)(void * waiter, id arg0, id arg1);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_4 _NativeCupertinoHttp_wrapBlockingBlock_pfv6jd(
+    _BlockingTrampoline_4 block, _BlockingTrampoline_4 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(id arg0, id arg1), {
     objc_retainBlock(block);
-    block(arg0);
-  };
+    block(nil, (__bridge id)(__bridge_retained void*)(arg0), (__bridge id)(__bridge_retained void*)(arg1));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, (__bridge id)(__bridge_retained void*)(arg0), (__bridge id)(__bridge_retained void*)(arg1));
+  });
 }
 
-typedef void  (^_ListenerTrampoline17)(id arg0, id arg1, id arg2);
-_ListenerTrampoline17 _wrapListenerBlock_tenbla(_ListenerTrampoline17 block) NS_RETURNS_RETAINED {
-  return ^void(id arg0, id arg1, id arg2) {
-    objc_retainBlock(block);
-    block(objc_retain(arg0), objc_retain(arg1), objc_retain(arg2));
-  };
-}
-
-typedef void  (^_ListenerTrampoline18)(id arg0, BOOL arg1, id arg2);
-_ListenerTrampoline18 _wrapListenerBlock_hfhq9m(_ListenerTrampoline18 block) NS_RETURNS_RETAINED {
-  return ^void(id arg0, BOOL arg1, id arg2) {
-    objc_retainBlock(block);
-    block(objc_retain(arg0), arg1, objc_retain(arg2));
-  };
-}
-
-typedef void  (^_ListenerTrampoline19)(void * arg0, id arg1, id arg2);
-_ListenerTrampoline19 _wrapListenerBlock_tm2na8(_ListenerTrampoline19 block) NS_RETURNS_RETAINED {
-  return ^void(void * arg0, id arg1, id arg2) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), objc_retain(arg2));
-  };
-}
-
-typedef void  (^_ListenerTrampoline20)(NSURLSessionAuthChallengeDisposition arg0, id arg1);
-_ListenerTrampoline20 _wrapListenerBlock_1najo2h(_ListenerTrampoline20 block) NS_RETURNS_RETAINED {
-  return ^void(NSURLSessionAuthChallengeDisposition arg0, id arg1) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1));
-  };
-}
-
-typedef void  (^_ListenerTrampoline21)(void * arg0, id arg1, id arg2, id arg3);
-_ListenerTrampoline21 _wrapListenerBlock_1wmulza(_ListenerTrampoline21 block) NS_RETURNS_RETAINED {
-  return ^void(void * arg0, id arg1, id arg2, id arg3) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), objc_retain(arg2), objc_retainBlock(arg3));
-  };
-}
-
-typedef void  (^_ListenerTrampoline22)(NSURLSessionDelayedRequestDisposition arg0, id arg1);
-_ListenerTrampoline22 _wrapListenerBlock_wnmjgj(_ListenerTrampoline22 block) NS_RETURNS_RETAINED {
-  return ^void(NSURLSessionDelayedRequestDisposition arg0, id arg1) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1));
-  };
-}
-
-typedef void  (^_ListenerTrampoline23)(void * arg0, id arg1, id arg2, id arg3, id arg4);
-_ListenerTrampoline23 _wrapListenerBlock_1nnj9ov(_ListenerTrampoline23 block) NS_RETURNS_RETAINED {
-  return ^void(void * arg0, id arg1, id arg2, id arg3, id arg4) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), objc_retain(arg2), objc_retain(arg3), objc_retainBlock(arg4));
-  };
-}
-
-typedef void  (^_ListenerTrampoline24)(void * arg0, id arg1, id arg2, id arg3, id arg4, id arg5);
-_ListenerTrampoline24 _wrapListenerBlock_dmve6(_ListenerTrampoline24 block) NS_RETURNS_RETAINED {
-  return ^void(void * arg0, id arg1, id arg2, id arg3, id arg4, id arg5) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), objc_retain(arg2), objc_retain(arg3), objc_retain(arg4), objc_retainBlock(arg5));
-  };
-}
-
-typedef void  (^_ListenerTrampoline25)(void * arg0, id arg1, id arg2, int64_t arg3, id arg4);
-_ListenerTrampoline25 _wrapListenerBlock_qxeqyf(_ListenerTrampoline25 block) NS_RETURNS_RETAINED {
-  return ^void(void * arg0, id arg1, id arg2, int64_t arg3, id arg4) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), objc_retain(arg2), arg3, objc_retainBlock(arg4));
-  };
-}
-
-typedef void  (^_ListenerTrampoline26)(void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4, int64_t arg5);
-_ListenerTrampoline26 _wrapListenerBlock_jzggzf(_ListenerTrampoline26 block) NS_RETURNS_RETAINED {
-  return ^void(void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), objc_retain(arg2), arg3, arg4, arg5);
-  };
-}
-
-typedef void  (^_ListenerTrampoline27)(void * arg0, id arg1, id arg2, id arg3);
-_ListenerTrampoline27 _wrapListenerBlock_1a6kixf(_ListenerTrampoline27 block) NS_RETURNS_RETAINED {
-  return ^void(void * arg0, id arg1, id arg2, id arg3) {
-    objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), objc_retain(arg2), objc_retain(arg3));
-  };
-}
-
-typedef void  (^_ListenerTrampoline28)(NSURLSessionResponseDisposition arg0);
-_ListenerTrampoline28 _wrapListenerBlock_ci81hw(_ListenerTrampoline28 block) NS_RETURNS_RETAINED {
+typedef void  (^_ListenerTrampoline_5)(NSURLSessionResponseDisposition arg0);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_5 _NativeCupertinoHttp_wrapListenerBlock_16sve1d(_ListenerTrampoline_5 block) NS_RETURNS_RETAINED {
   return ^void(NSURLSessionResponseDisposition arg0) {
     objc_retainBlock(block);
     block(arg0);
   };
 }
 
-typedef void  (^_ListenerTrampoline29)(void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4);
-_ListenerTrampoline29 _wrapListenerBlock_1wl7fts(_ListenerTrampoline29 block) NS_RETURNS_RETAINED {
-  return ^void(void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4) {
+typedef void  (^_BlockingTrampoline_5)(void * waiter, NSURLSessionResponseDisposition arg0);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_5 _NativeCupertinoHttp_wrapBlockingBlock_16sve1d(
+    _BlockingTrampoline_5 block, _BlockingTrampoline_5 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(NSURLSessionResponseDisposition arg0), {
     objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), objc_retain(arg2), arg3, arg4);
+    block(nil, arg0);
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0);
+  });
+}
+
+typedef void  (^_ListenerTrampoline_6)(NSURLSessionDelayedRequestDisposition arg0, id arg1);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_6 _NativeCupertinoHttp_wrapListenerBlock_1otpo83(_ListenerTrampoline_6 block) NS_RETURNS_RETAINED {
+  return ^void(NSURLSessionDelayedRequestDisposition arg0, id arg1) {
+    objc_retainBlock(block);
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1));
   };
 }
 
-typedef void  (^_ListenerTrampoline30)(void * arg0, id arg1, id arg2, id arg3, id arg4);
-_ListenerTrampoline30 _wrapListenerBlock_no6pyg(_ListenerTrampoline30 block) NS_RETURNS_RETAINED {
+typedef void  (^_BlockingTrampoline_6)(void * waiter, NSURLSessionDelayedRequestDisposition arg0, id arg1);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_6 _NativeCupertinoHttp_wrapBlockingBlock_1otpo83(
+    _BlockingTrampoline_6 block, _BlockingTrampoline_6 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(NSURLSessionDelayedRequestDisposition arg0, id arg1), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1));
+  });
+}
+
+typedef void  (^_ListenerTrampoline_7)(void * arg0, id arg1, id arg2, id arg3, id arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_7 _NativeCupertinoHttp_wrapListenerBlock_xx612k(_ListenerTrampoline_7 block) NS_RETURNS_RETAINED {
   return ^void(void * arg0, id arg1, id arg2, id arg3, id arg4) {
     objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), objc_retain(arg2), objc_retain(arg3), objc_retain(arg4));
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), (__bridge id)(__bridge_retained void*)(arg3), objc_retainBlock(arg4));
   };
 }
 
-typedef void  (^_ListenerTrampoline31)(void * arg0, id arg1, id arg2, NSURLSessionWebSocketCloseCode arg3, id arg4);
-_ListenerTrampoline31 _wrapListenerBlock_10hgvcc(_ListenerTrampoline31 block) NS_RETURNS_RETAINED {
+typedef void  (^_BlockingTrampoline_7)(void * waiter, void * arg0, id arg1, id arg2, id arg3, id arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_7 _NativeCupertinoHttp_wrapBlockingBlock_xx612k(
+    _BlockingTrampoline_7 block, _BlockingTrampoline_7 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0, id arg1, id arg2, id arg3, id arg4), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), (__bridge id)(__bridge_retained void*)(arg3), objc_retainBlock(arg4));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), (__bridge id)(__bridge_retained void*)(arg3), objc_retainBlock(arg4));
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_4)(void * sel, id arg1, id arg2, id arg3, id arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_xx612k(id target, void * sel, id arg1, id arg2, id arg3, id arg4) {
+  return ((_ProtocolTrampoline_4)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2, arg3, arg4);
+}
+
+typedef void  (^_ListenerTrampoline_8)(void * arg0, id arg1, id arg2, id arg3);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_8 _NativeCupertinoHttp_wrapListenerBlock_1tz5yf(_ListenerTrampoline_8 block) NS_RETURNS_RETAINED {
+  return ^void(void * arg0, id arg1, id arg2, id arg3) {
+    objc_retainBlock(block);
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), (__bridge id)(__bridge_retained void*)(arg3));
+  };
+}
+
+typedef void  (^_BlockingTrampoline_8)(void * waiter, void * arg0, id arg1, id arg2, id arg3);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_8 _NativeCupertinoHttp_wrapBlockingBlock_1tz5yf(
+    _BlockingTrampoline_8 block, _BlockingTrampoline_8 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0, id arg1, id arg2, id arg3), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), (__bridge id)(__bridge_retained void*)(arg3));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), (__bridge id)(__bridge_retained void*)(arg3));
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_5)(void * sel, id arg1, id arg2, id arg3);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_1tz5yf(id target, void * sel, id arg1, id arg2, id arg3) {
+  return ((_ProtocolTrampoline_5)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2, arg3);
+}
+
+typedef void  (^_ListenerTrampoline_9)(void * arg0, id arg1, id arg2);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_9 _NativeCupertinoHttp_wrapListenerBlock_fjrv01(_ListenerTrampoline_9 block) NS_RETURNS_RETAINED {
+  return ^void(void * arg0, id arg1, id arg2) {
+    objc_retainBlock(block);
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2));
+  };
+}
+
+typedef void  (^_BlockingTrampoline_9)(void * waiter, void * arg0, id arg1, id arg2);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_9 _NativeCupertinoHttp_wrapBlockingBlock_fjrv01(
+    _BlockingTrampoline_9 block, _BlockingTrampoline_9 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0, id arg1, id arg2), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2));
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_6)(void * sel, id arg1, id arg2);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_fjrv01(id target, void * sel, id arg1, id arg2) {
+  return ((_ProtocolTrampoline_6)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2);
+}
+
+typedef void  (^_ListenerTrampoline_10)(void * arg0, id arg1, id arg2, id arg3, id arg4, id arg5);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_10 _NativeCupertinoHttp_wrapListenerBlock_l2g8ke(_ListenerTrampoline_10 block) NS_RETURNS_RETAINED {
+  return ^void(void * arg0, id arg1, id arg2, id arg3, id arg4, id arg5) {
+    objc_retainBlock(block);
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), (__bridge id)(__bridge_retained void*)(arg3), (__bridge id)(__bridge_retained void*)(arg4), objc_retainBlock(arg5));
+  };
+}
+
+typedef void  (^_BlockingTrampoline_10)(void * waiter, void * arg0, id arg1, id arg2, id arg3, id arg4, id arg5);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_10 _NativeCupertinoHttp_wrapBlockingBlock_l2g8ke(
+    _BlockingTrampoline_10 block, _BlockingTrampoline_10 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0, id arg1, id arg2, id arg3, id arg4, id arg5), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), (__bridge id)(__bridge_retained void*)(arg3), (__bridge id)(__bridge_retained void*)(arg4), objc_retainBlock(arg5));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), (__bridge id)(__bridge_retained void*)(arg3), (__bridge id)(__bridge_retained void*)(arg4), objc_retainBlock(arg5));
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_7)(void * sel, id arg1, id arg2, id arg3, id arg4, id arg5);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_l2g8ke(id target, void * sel, id arg1, id arg2, id arg3, id arg4, id arg5) {
+  return ((_ProtocolTrampoline_7)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2, arg3, arg4, arg5);
+}
+
+typedef void  (^_ListenerTrampoline_11)(NSURLSessionAuthChallengeDisposition arg0, id arg1);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_11 _NativeCupertinoHttp_wrapListenerBlock_n8yd09(_ListenerTrampoline_11 block) NS_RETURNS_RETAINED {
+  return ^void(NSURLSessionAuthChallengeDisposition arg0, id arg1) {
+    objc_retainBlock(block);
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1));
+  };
+}
+
+typedef void  (^_BlockingTrampoline_11)(void * waiter, NSURLSessionAuthChallengeDisposition arg0, id arg1);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_11 _NativeCupertinoHttp_wrapBlockingBlock_n8yd09(
+    _BlockingTrampoline_11 block, _BlockingTrampoline_11 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(NSURLSessionAuthChallengeDisposition arg0, id arg1), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1));
+  });
+}
+
+typedef void  (^_ListenerTrampoline_12)(void * arg0, id arg1, id arg2, id arg3);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_12 _NativeCupertinoHttp_wrapListenerBlock_bklti2(_ListenerTrampoline_12 block) NS_RETURNS_RETAINED {
+  return ^void(void * arg0, id arg1, id arg2, id arg3) {
+    objc_retainBlock(block);
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), objc_retainBlock(arg3));
+  };
+}
+
+typedef void  (^_BlockingTrampoline_12)(void * waiter, void * arg0, id arg1, id arg2, id arg3);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_12 _NativeCupertinoHttp_wrapBlockingBlock_bklti2(
+    _BlockingTrampoline_12 block, _BlockingTrampoline_12 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0, id arg1, id arg2, id arg3), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), objc_retainBlock(arg3));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), objc_retainBlock(arg3));
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_8)(void * sel, id arg1, id arg2, id arg3);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_bklti2(id target, void * sel, id arg1, id arg2, id arg3) {
+  return ((_ProtocolTrampoline_8)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2, arg3);
+}
+
+typedef void  (^_ListenerTrampoline_13)(void * arg0, id arg1, id arg2, int64_t arg3, id arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_13 _NativeCupertinoHttp_wrapListenerBlock_jyim80(_ListenerTrampoline_13 block) NS_RETURNS_RETAINED {
+  return ^void(void * arg0, id arg1, id arg2, int64_t arg3, id arg4) {
+    objc_retainBlock(block);
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, objc_retainBlock(arg4));
+  };
+}
+
+typedef void  (^_BlockingTrampoline_13)(void * waiter, void * arg0, id arg1, id arg2, int64_t arg3, id arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_13 _NativeCupertinoHttp_wrapBlockingBlock_jyim80(
+    _BlockingTrampoline_13 block, _BlockingTrampoline_13 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0, id arg1, id arg2, int64_t arg3, id arg4), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, objc_retainBlock(arg4));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, objc_retainBlock(arg4));
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_9)(void * sel, id arg1, id arg2, int64_t arg3, id arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_jyim80(id target, void * sel, id arg1, id arg2, int64_t arg3, id arg4) {
+  return ((_ProtocolTrampoline_9)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2, arg3, arg4);
+}
+
+typedef void  (^_ListenerTrampoline_14)(void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4, int64_t arg5);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_14 _NativeCupertinoHttp_wrapListenerBlock_h68abb(_ListenerTrampoline_14 block) NS_RETURNS_RETAINED {
+  return ^void(void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
+    objc_retainBlock(block);
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, arg4, arg5);
+  };
+}
+
+typedef void  (^_BlockingTrampoline_14)(void * waiter, void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4, int64_t arg5);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_14 _NativeCupertinoHttp_wrapBlockingBlock_h68abb(
+    _BlockingTrampoline_14 block, _BlockingTrampoline_14 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4, int64_t arg5), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, arg4, arg5);
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, arg4, arg5);
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_10)(void * sel, id arg1, id arg2, int64_t arg3, int64_t arg4, int64_t arg5);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_h68abb(id target, void * sel, id arg1, id arg2, int64_t arg3, int64_t arg4, int64_t arg5) {
+  return ((_ProtocolTrampoline_10)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2, arg3, arg4, arg5);
+}
+
+Protocol* _NativeCupertinoHttp_NSURLSessionDataDelegate(void) { return @protocol(NSURLSessionDataDelegate); }
+
+typedef void  (^_ListenerTrampoline_15)(void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_15 _NativeCupertinoHttp_wrapListenerBlock_ly2579(_ListenerTrampoline_15 block) NS_RETURNS_RETAINED {
+  return ^void(void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4) {
+    objc_retainBlock(block);
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, arg4);
+  };
+}
+
+typedef void  (^_BlockingTrampoline_15)(void * waiter, void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_15 _NativeCupertinoHttp_wrapBlockingBlock_ly2579(
+    _BlockingTrampoline_15 block, _BlockingTrampoline_15 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0, id arg1, id arg2, int64_t arg3, int64_t arg4), {
+    objc_retainBlock(block);
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, arg4);
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, arg4);
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_11)(void * sel, id arg1, id arg2, int64_t arg3, int64_t arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_ly2579(id target, void * sel, id arg1, id arg2, int64_t arg3, int64_t arg4) {
+  return ((_ProtocolTrampoline_11)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2, arg3, arg4);
+}
+
+Protocol* _NativeCupertinoHttp_NSURLSessionDownloadDelegate(void) { return @protocol(NSURLSessionDownloadDelegate); }
+
+typedef void  (^_ListenerTrampoline_16)(void * arg0, id arg1, id arg2, NSURLSessionWebSocketCloseCode arg3, id arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_16 _NativeCupertinoHttp_wrapListenerBlock_1lx650f(_ListenerTrampoline_16 block) NS_RETURNS_RETAINED {
   return ^void(void * arg0, id arg1, id arg2, NSURLSessionWebSocketCloseCode arg3, id arg4) {
     objc_retainBlock(block);
-    block(arg0, objc_retain(arg1), objc_retain(arg2), arg3, objc_retain(arg4));
+    block(arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, (__bridge id)(__bridge_retained void*)(arg4));
   };
 }
 
-typedef void  (^_ListenerTrampoline32)(id arg0, id arg1, id arg2, id arg3);
-_ListenerTrampoline32 _wrapListenerBlock_19b8ge5(_ListenerTrampoline32 block) NS_RETURNS_RETAINED {
-  return ^void(id arg0, id arg1, id arg2, id arg3) {
+typedef void  (^_BlockingTrampoline_16)(void * waiter, void * arg0, id arg1, id arg2, NSURLSessionWebSocketCloseCode arg3, id arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_16 _NativeCupertinoHttp_wrapBlockingBlock_1lx650f(
+    _BlockingTrampoline_16 block, _BlockingTrampoline_16 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0, id arg1, id arg2, NSURLSessionWebSocketCloseCode arg3, id arg4), {
     objc_retainBlock(block);
-    block(objc_retain(arg0), objc_retain(arg1), objc_retain(arg2), objc_retain(arg3));
+    block(nil, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, (__bridge id)(__bridge_retained void*)(arg4));
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0, (__bridge id)(__bridge_retained void*)(arg1), (__bridge id)(__bridge_retained void*)(arg2), arg3, (__bridge id)(__bridge_retained void*)(arg4));
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_12)(void * sel, id arg1, id arg2, NSURLSessionWebSocketCloseCode arg3, id arg4);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_1lx650f(id target, void * sel, id arg1, id arg2, NSURLSessionWebSocketCloseCode arg3, id arg4) {
+  return ((_ProtocolTrampoline_12)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel, arg1, arg2, arg3, arg4);
+}
+
+Protocol* _NativeCupertinoHttp_NSURLSessionWebSocketDelegate(void) { return @protocol(NSURLSessionWebSocketDelegate); }
+
+typedef void  (^_ListenerTrampoline_17)(void * arg0);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_17 _NativeCupertinoHttp_wrapListenerBlock_ovsamd(_ListenerTrampoline_17 block) NS_RETURNS_RETAINED {
+  return ^void(void * arg0) {
+    objc_retainBlock(block);
+    block(arg0);
   };
 }
+
+typedef void  (^_BlockingTrampoline_17)(void * waiter, void * arg0);
+__attribute__((visibility("default"))) __attribute__((used))
+_ListenerTrampoline_17 _NativeCupertinoHttp_wrapBlockingBlock_ovsamd(
+    _BlockingTrampoline_17 block, _BlockingTrampoline_17 listenerBlock,
+    DOBJC_Context* ctx) NS_RETURNS_RETAINED {
+  BLOCKING_BLOCK_IMPL(ctx, ^void(void * arg0), {
+    objc_retainBlock(block);
+    block(nil, arg0);
+  }, {
+    objc_retainBlock(listenerBlock);
+    listenerBlock(waiter, arg0);
+  });
+}
+
+typedef void  (^_ProtocolTrampoline_13)(void * sel);
+__attribute__((visibility("default"))) __attribute__((used))
+void  _NativeCupertinoHttp_protocolTrampoline_ovsamd(id target, void * sel) {
+  return ((_ProtocolTrampoline_13)((id (*)(id, SEL, SEL))objc_msgSend)(target, @selector(getDOBJCDartProtocolMethodForSelector:), sel))(sel);
+}
+#undef BLOCKING_BLOCK_IMPL
+
+#pragma clang diagnostic pop

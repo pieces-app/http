@@ -4,6 +4,7 @@
 
 import 'package:http/http.dart';
 
+import 'src/abort_tests.dart';
 import 'src/close_tests.dart';
 import 'src/compressed_response_body_tests.dart';
 import 'src/isolate_test.dart';
@@ -22,6 +23,7 @@ import 'src/response_headers_tests.dart';
 import 'src/response_status_line_tests.dart';
 import 'src/server_errors_test.dart';
 
+export 'src/abort_tests.dart' show testAbort;
 export 'src/close_tests.dart' show testClose;
 export 'src/compressed_response_body_tests.dart'
     show testCompressedResponseBody;
@@ -49,7 +51,7 @@ export 'src/server_errors_test.dart' show testServerErrors;
 //
 /// If [canStreamResponseBody] is `false` then tests that assume that the
 /// [Client] supports receiving HTTP responses with unbounded body sizes will
-/// be skipped
+/// be skipped.
 ///
 /// If [redirectAlwaysAllowed] is `true` then tests that require the [Client]
 /// to limit redirects will be skipped.
@@ -69,8 +71,14 @@ export 'src/server_errors_test.dart' show testServerErrors;
 /// If [supportsFoldedHeaders] is `false` then the tests that assume that the
 /// [Client] can parse folded headers will be skipped.
 ///
+/// If [correctlyHandlesNullHeaderValues] is `false` then the tests that assume
+/// that the [Client] correctly deals with NUL in header values are skipped.
+///
 /// If [supportsMultipartRequest] is `false` then tests that assume that
 /// multipart requests can be sent will be skipped.
+///
+/// If [supportsAbort] is `false` then tests that assume that requests can be
+/// aborted will be skipped.
 ///
 /// The tests are run against a series of HTTP servers that are started by the
 /// tests. If the tests are run in the browser, then the test servers are
@@ -83,9 +91,11 @@ void testAll(
   bool canWorkInIsolates = true,
   bool preservesMethodCase = false,
   bool supportsFoldedHeaders = true,
+  bool correctlyHandlesNullHeaderValues = true,
   bool canSendCookieHeaders = false,
   bool canReceiveSetCookieHeaders = false,
   bool supportsMultipartRequest = true,
+  bool supportsAbort = false,
 }) {
   testRequestBody(clientFactory());
   testRequestBodyStreamed(clientFactory(),
@@ -97,7 +107,8 @@ void testAll(
   testRequestHeaders(clientFactory());
   testRequestMethods(clientFactory(), preservesMethodCase: preservesMethodCase);
   testResponseHeaders(clientFactory(),
-      supportsFoldedHeaders: supportsFoldedHeaders);
+      supportsFoldedHeaders: supportsFoldedHeaders,
+      correctlyHandlesNullHeaderValues: correctlyHandlesNullHeaderValues);
   testResponseStatusLine(clientFactory());
   testRedirect(clientFactory(), redirectAlwaysAllowed: redirectAlwaysAllowed);
   testServerErrors(clientFactory());
@@ -111,4 +122,8 @@ void testAll(
       canSendCookieHeaders: canSendCookieHeaders);
   testResponseCookies(clientFactory(),
       canReceiveSetCookieHeaders: canReceiveSetCookieHeaders);
+  testAbort(clientFactory(),
+      supportsAbort: supportsAbort,
+      canStreamRequestBody: canStreamRequestBody,
+      canStreamResponseBody: canStreamResponseBody);
 }

@@ -16,7 +16,7 @@ dependencies:
   ok_http:
     path: ../
   provider: ^6.1.1
-  web_socket: ^0.1.5
+  web_socket: '>=0.1.5 <2.0.0'
 
 dev_dependencies:
   dart_flutter_team_lints: ^3.0.0
@@ -33,3 +33,11 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - test_certs/  # Used in integration tests.
+
+# Use the path version of `package:http` so that the behavior matches the
+# expectations in http_client_conformance_tests.
+dependency_overrides:
+  http:
+    path: ../../http/
