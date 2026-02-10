@@ -8,6 +8,8 @@ version: 1.0.1
 environment:
   sdk: ^3.4.0
 
+resolution: workspace
+
 dependencies:
   web: '>=1.1.1 <2.0.0'
 
